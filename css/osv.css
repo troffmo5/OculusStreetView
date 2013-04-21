@@ -1,0 +1,60 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #000000;
+  color: #000;
+  font-family: sans-serif;
+  font-size: 10px;
+  line-height: 15px;
+  height: 100%;
+  overflow: hidden;
+}
+
+#viewer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#mapcontainer { 
+  position: absolute;
+  top: 220px;
+  left: 170px; 
+  width: 300px; 
+  height: 360px; 
+  z-index: 100;
+  background-color: #fff;
+  opacity: 1.0;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+#map { 
+  position: relative;
+  width: 300px; 
+  height: 300px; 
+  /*margin: 5px;*/
+  background-color: #fff;
+  opacity: 1.0;
+}
+
+#smap {
+  margin: 10px;
+}
+
+#mapsearch {
+  width: 280px;
+}
+
+#settings {
+  position: absolute;
+  padding: 10px;
+  top: 220px;
+  right: 170px;
+  width: 300px;
+  height: 360px;
+  z-index: 100;
+  background-color: #fff;
+  opacity: 1.0;
+  border-radius: 5px;
+}
