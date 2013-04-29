@@ -260,6 +260,14 @@ function initPano() {
     marker.setMap( null );
     marker = new google.maps.Marker({ position: this.location.latLng, map: gmap });
     marker.setMap( gmap );
+
+    if (window.history) {
+      var newUrl = '/?lat='+this.location.latLng.lat()+'&lng'+this.location.latLng.lng();
+      newUrl += USE_TRACKER ? '&'+escape(WEBSOCKET_ADDR.slice(5)) : '';
+      newUrl += '&q='+QUALITY;
+      newUrl += '&s='+$('#settings').is(':visible');
+      window.history.pushState('','',newUrl);
+    }
   };
 }
 
@@ -287,7 +295,7 @@ function initWebSocket() {
   connection.onclose = function () {
     //console.log('websocket close');
     if (USE_TRACKER) setTimeout(initWebSocket, 1000);
-  }
+  };
 }
 
 var lastButton0 = 0;
@@ -302,7 +310,7 @@ function getGamepadEvents() {
         if (pad) {
           //console.log(pad.buttons, pad.axes);
           if (pad.buttons[0] === 1 && lastButton0 ===0) {
-            moveToNextPlace()
+            moveToNextPlace();
           }
           lastButton0 = pad.buttons[0];
           moveVector.set(-pad.axes[1]*GAMEPAD_SPEED, -pad.axes[0]*GAMEPAD_SPEED, 0.0);
