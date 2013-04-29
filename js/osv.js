@@ -262,10 +262,11 @@ function initPano() {
     marker.setMap( gmap );
 
     if (window.history) {
-      var newUrl = '/?lat='+this.location.latLng.lat()+'&lng'+this.location.latLng.lng();
-      newUrl += USE_TRACKER ? '&'+escape(WEBSOCKET_ADDR.slice(5)) : '';
+      var newUrl = '/?lat='+this.location.latLng.lat()+'&lng='+this.location.latLng.lng();
+      newUrl += USE_TRACKER ? '&sock='+escape(WEBSOCKET_ADDR.slice(5)) : '';
       newUrl += '&q='+QUALITY;
       newUrl += '&s='+$('#settings').is(':visible');
+      newUrl += '&heading='+currHeading;
       window.history.pushState('','',newUrl);
     }
   };
@@ -415,6 +416,10 @@ $(document).ready(function() {
   if (params.sock !== undefined) {WEBSOCKET_ADDR = 'ws://'+params.sock; USE_TRACKER = true;}
   if (params.q !== undefined) QUALITY = params.q;
   if (params.s !== undefined) SHOW_SETTINGS = params.s !== "false";
+  if (params.heading !== undefined) {
+    BaseRotationEuler.set(0.0, angleRangeRad(THREE.Math.degToRad(-parseFloat(params.heading))) , 0.0 );
+    BaseRotation.setFromEuler(BaseRotationEuler, 'YZX');
+  }
 
 
   WIDTH = window.innerWidth; HEIGHT = window.innerHeight;
