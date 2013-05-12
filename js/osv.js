@@ -14,6 +14,7 @@ var MOVING_MOUSE = false;
 var MOUSE_SPEED = 0.005;
 var KEYBOARD_SPEED = 0.02;
 var GAMEPAD_SPEED = 0.04;
+var DEADZONE = 0.2;
 var SHOW_SETTINGS = true;
 var NAV_DELTA = 45;
 var OculusRift = {
@@ -305,7 +306,25 @@ function getGamepadEvents() {
             moveToNextPlace()
           }
           lastButton0 = pad.buttons[0];
-          moveVector.set(-pad.axes[1]*GAMEPAD_SPEED, -pad.axes[0]*GAMEPAD_SPEED, 0.0);
+
+          var padX = pad.axes[1], padY = pad.axes[0];
+
+          // ignore deadzone
+          if (padX < -DEADZONE)
+            padX = padX + DEADZONE;
+          else if(padX > DEADZONE)
+            padX = padX - DEADZONE;
+          else
+            padX = 0;
+
+          if (padY < -DEADZONE)
+            padY = padY + DEADZONE;
+          else if(padY > DEADZONE)
+            padY = padY - DEADZONE;
+          else
+            padY = padY = 0;
+
+          moveVector.set(-padX*GAMEPAD_SPEED, -padY*GAMEPAD_SPEED, 0.0);
         }
     }
   }
