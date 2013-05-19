@@ -48,6 +48,7 @@ var BaseRotation = new THREE.Quaternion();
 var BaseRotationEuler = new THREE.Vector3();
 
 var gamepad;
+var VRState = null;
 
 // Utility function
 // ----------------------------------------------
@@ -160,7 +161,7 @@ function initWebGL() {
         break;
       case 18: //alt
         USE_DEPTH = !USE_DEPTH;
-        setSphereGeometry()
+        setSphereGeometry();
         break;
     }
   });
@@ -183,7 +184,7 @@ function initWebGL() {
   });
 
   viewer.mousedown(function(event) {
-    MOVING_MOUSE = !USE_TRACKER;
+    //MOVING_MOUSE = !USE_TRACKER;
     lastClientX = event.clientX;
     lastClientY = event.clientY;
   });
@@ -218,9 +219,11 @@ function initWebGL() {
     if (USE_TRACKER) {
       WEBSOCKET_ADDR = $('#wsock').val();
       initWebSocket();
+      VRState = null;
     }
     else {
       if (connection) connection.close();
+      initVR();
     }
   });
 
@@ -287,7 +290,7 @@ function initPano() {
 
   panoDepthLoader.onDepthLoad = function() {
     setSphereGeometry();
-  }
+  };
 }
 
 function setSphereGeometry() {
@@ -422,6 +425,28 @@ function moveToNextPlace() {
   }
 }
 
+function initVR() {
+  vr.load(function(error) {
+    if (error) {
+      //console.warn('VR error: ' + error.toString());
+      return;
+    }
+
+    VRState = new vr.State();
+    if (!vr.pollState(VRState)) {
+      //console.warn('NPVR plugin not found/error polling');
+      VRState = null;
+      return;
+    }
+
+    if (!VRState.hmd.present) {
+      //console.warn('oculus rift not detected');
+      VRState = null;
+      return;
+    }
+  });
+}
+
 function render() {
   effect.render( scene, camera );
   //renderer.render(scene, camera);
@@ -444,6 +469,18 @@ function loop() {
 
   // Check gamepad movement
   getGamepadEvents();
+
+  // User vr plugin
+  if (!USE_TRACKER && VRState !== null) {
+    if (vr.pollState(VRState)) {
+      HMDRotation.set(VRState.hmd.rotation[0], VRState.hmd.rotation[1], VRState.hmd.rotation[2], VRState.hmd.rotation[3]);
+    }
+  }
+
+  // Disable X movement HMD tracking is enabled
+  if (USE_TRACKER || VRState !== null) {
+    moveVector.x = 0;
+  }
 
   // Apply movement
   BaseRotationEuler.set( angleRangeRad(BaseRotationEuler.x + moveVector.x), angleRangeRad(BaseRotationEuler.y + moveVector.y), 0.0 );
@@ -486,6 +523,7 @@ $(document).ready(function() {
   initWebGL();
   initPano();
   if (USE_TRACKER) initWebSocket();
+  else initVR();
   initGoogleMap();
 
   // Load default location
