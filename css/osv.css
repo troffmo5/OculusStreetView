@@ -16,45 +16,27 @@ body {
   left: 0;
 }
 
-#mapcontainer { 
+.ui {
   position: absolute;
-  top: 220px;
-  left: 170px; 
-  width: 300px; 
-  height: 360px; 
-  z-index: 100;
-  background-color: #fff;
-  opacity: 1.0;
-  border-radius: 5px;
+}
+
+.mapcontainer {
+  position: absolute;
+  padding: 5px;
+  top: 35px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.map {
+  position: absolute;
+  left: 5px;right: 5px;top: 5px; bottom: 40px;
+
   padding: 5px;
 }
-
-#map { 
-  position: relative;
-  width: 300px; 
-  height: 300px; 
-  /*margin: 5px;*/
-  background-color: #fff;
-  opacity: 1.0;
-}
-
-#smap {
-  margin: 10px;
-}
-
-#mapsearch {
-  width: 280px;
-}
-
-#settings {
+.mapsearch {
   position: absolute;
-  padding: 10px;
-  top: 220px;
-  right: 170px;
-  width: 300px;
-  height: 360px;
-  z-index: 100;
-  background-color: #fff;
-  opacity: 1.0;
-  border-radius: 5px;
+  bottom: 10px;
+  left: 5px;
+  right: 5px;
 }

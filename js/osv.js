@@ -135,8 +135,7 @@ function initWebGL() {
       case 32:
         var spaceKeyTime = new Date();
         if (spaceKeyTime-lastSpaceKeyTime < 300) {
-          $('#mapcontainer').toggle(200);
-          $('#settings').toggle(200);
+          $('.ui').toggle(200);
         }
         lastSpaceKeyTime = spaceKeyTime;
         break;
@@ -184,7 +183,7 @@ function initWebGL() {
   });
 
   viewer.mousedown(function(event) {
-    //MOVING_MOUSE = !USE_TRACKER;
+    MOVING_MOUSE = true;
     lastClientX = event.clientX;
     lastClientY = event.clientY;
   });
@@ -209,15 +208,17 @@ function initWebGL() {
   });
 
   if (!SHOW_SETTINGS) {
-    $('#mapcontainer').hide();
-    $('#settings').hide();
+    $('.ui').hide();
   }
 
-  $('#extt').prop('checked', USE_TRACKER);
-  $('#extt').change(function(event) {
-    USE_TRACKER = $('#extt').is(':checked');
+  $('#extt-left').prop('checked', USE_TRACKER);
+  $('#extt-right').prop('checked', USE_TRACKER);
+
+
+  $('#extt-left').change(function(event) {
+    USE_TRACKER = $('#extt-left').is(':checked');
     if (USE_TRACKER) {
-      WEBSOCKET_ADDR = $('#wsock').val();
+      WEBSOCKET_ADDR = $('#wsock-left').val();
       initWebSocket();
       VRState = null;
     }
@@ -225,14 +226,39 @@ function initWebGL() {
       if (connection) connection.close();
       initVR();
     }
+    $('#extt-right').prop('checked', USE_TRACKER);
   });
 
-  $('#wsock').change(function(event) {
-    WEBSOCKET_ADDR = $('#wsock').val();
+  $('#extt-right').change(function(event) {
+    USE_TRACKER = $('#extt-right').is(':checked');
+    if (USE_TRACKER) {
+      WEBSOCKET_ADDR = $('#wsock-right').val();
+      initWebSocket();
+      VRState = null;
+    }
+    else {
+      if (connection) connection.close();
+      initVR();
+    }
+    $('#extt-left').prop('checked', USE_TRACKER);
+  });
+
+  $('#wsock-left').change(function(event) {
+    WEBSOCKET_ADDR = $('#wsock-left').val();
     if (USE_TRACKER) {
       if (connection) connection.close();
       initWebSocket();
     }
+    $('#wsock-right').prop('value', $('#wsock-left').val());
+  });
+
+  $('#wsock-right').change(function(event) {
+    WEBSOCKET_ADDR = $('#wsock-right').val();
+    if (USE_TRACKER) {
+      if (connection) connection.close();
+      initWebSocket();
+    }
+    $('#wsock-left').prop('value', $('#wsock-right').val());
   });
 
   window.addEventListener( 'resize', resize, false );
@@ -272,18 +298,22 @@ function initPano() {
     progBarContainer.visible = false;
     progBar.visible = false;
 
-    marker.setMap( null );
-    marker = new google.maps.Marker({ position: this.location.latLng, map: gmap });
-    marker.setMap( gmap );
+    markerLeft.setMap( null );
+    markerLeft = new google.maps.Marker({ position: this.location.latLng, map: gmapLeft });
+    markerLeft.setMap( gmapLeft );
 
-    if (window.history) {
+    markerRight.setMap( null );
+    markerRight = new google.maps.Marker({ position: this.location.latLng, map: gmapRight });
+    markerRight.setMap( gmapRight );
+
+/*    if (window.history) {
       var newUrl = '/?lat='+this.location.latLng.lat()+'&lng='+this.location.latLng.lng();
       newUrl += USE_TRACKER ? '&sock='+escape(WEBSOCKET_ADDR.slice(5)) : '';
       newUrl += '&q='+QUALITY;
       newUrl += '&s='+$('#settings').is(':visible');
       newUrl += '&heading='+currHeading;
       window.history.pushState('','',newUrl);
-    }
+    }*/
 
     panoDepthLoader.load(this.location.pano);
   };
@@ -382,29 +412,106 @@ function getGamepadEvents() {
 
 function initGoogleMap() {
   currentLocation = new google.maps.LatLng( DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng );
-  gmap = new google.maps.Map(document.getElementById("map"), {
+
+  var eventLock = false;
+  gmapLeft = new google.maps.Map($('#map-left')[0], {
     zoom: 14,
     center: currentLocation,
     mapTypeId: google.maps.MapTypeId.HYBRID,
-    streetViewControl: true
+    streetViewControl: false
   });
-  google.maps.event.addListener(gmap, 'click', function(event) {
+  google.maps.event.addListener(gmapLeft, 'click', function(event) {
     panoLoader.load(event.latLng);
   });
 
+  google.maps.event.addListener(gmapLeft, 'center_changed', function(event) {
+    if(!this.blockEvents) {
+      gmapRight.blockEvents = true;
+      gmapRight.setCenter(gmapLeft.getCenter());
+      gmapRight.blockEvents = false;
+    }
+  });
+  google.maps.event.addListener(gmapLeft, 'zoom_changed', function(event) {
+    if(!this.blockEvents) {
+      gmapRight.blockEvents = true;
+      gmapRight.setZoom(gmapLeft.getZoom());
+      gmapRight.blockEvents = false;
+    }
+  });
+  google.maps.event.addListener(gmapLeft, 'maptypeid_changed', function(event) {
+    if(!this.blockEvents) {
+      gmapRight.blockEvents = true;
+      gmapRight.setMapTypeId(gmapLeft.getMapTypeId());
+      gmapRight.blockEvents = false;
+    }
+  });
+  gmapLeft.blockEvents = false;
+
+  gmapRight = new google.maps.Map($('#map-right')[0], {
+    zoom: 14,
+    center: currentLocation,
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    streetViewControl: false
+  });
+
+  google.maps.event.addListener(gmapRight, 'click', function(event) {
+    panoLoader.load(event.latLng);
+  });
+
+  google.maps.event.addListener(gmapRight, 'center_changed', function(event) {
+    if (!this.blockEvents) {
+      gmapLeft.blockEvents = true;
+      gmapLeft.setCenter(gmapRight.getCenter());
+      gmapLeft.blockEvents = false;
+
+    }
+  });
+  google.maps.event.addListener(gmapRight, 'zoom_changed', function(event) {
+    if (!this.blockEvents) {
+      gmapLeft.blockEvents = true;
+      gmapLeft.setZoom(gmapRight.getZoom());
+      gmapLeft.blockEvents = false;
+    }
+  });
+  google.maps.event.addListener(gmapRight, 'maptypeid_changed', function(event) {
+    if (!this.blockEvents) {
+      gmapLeft.blockEvents = true;
+      gmapLeft.setMapTypeId(gmapRight.getMapTypeId());
+      gmapLeft.blockEvents = false;
+    }
+  });
+  gmapRight.blockEvents = false;
+
   geocoder = new google.maps.Geocoder();
 
-  $('#mapsearch').change(function() {
-      geocoder.geocode( { 'address': $('#mapsearch').val()}, function(results, status) {
+  // TODO: better sync
+  $('#mapsearch-left').change(function() {
+      geocoder.geocode( { 'address': $('#mapsearch-left').val()}, function(results, status) {
       if (status == google.maps.GeocoderStatus.OK) {
-        gmap.setCenter(results[0].geometry.location);
+        gmapLeft.setCenter(results[0].geometry.location);
         panoLoader.load( results[0].geometry.location );
       }
+      $('#mapsearch-right').prop('value', $('#mapsearch-left').val() );
+    });
+  });
+  $('#mapsearch-right').change(function() {
+      geocoder.geocode( { 'address': $('#mapsearch-right').val()}, function(results, status) {
+      if (status == google.maps.GeocoderStatus.OK) {
+        gmapLeft.setCenter(results[0].geometry.location);
+        panoLoader.load( results[0].geometry.location );
+      }
+      $('#mapsearch-left').prop('value', $('#mapsearch-right').val() );
     });
   });
 
-  marker = new google.maps.Marker({ position: currentLocation, map: gmap });
-  marker.setMap( gmap );
+
+
+  markerLeft = new google.maps.Marker({ position: currentLocation, map: gmapLeft });
+  markerLeft.setMap( gmapLeft );
+
+  markerRight = new google.maps.Marker({ position: currentLocation, map: gmapRight });
+  markerRight.setMap( gmapRight );
+
 }
 
 
@@ -452,9 +559,31 @@ function render() {
   //renderer.render(scene, camera);
 }
 
+function setUiSize() {
+  var width = window.innerWidth, hwidth = width/2,
+      height = window.innerHeight;
+
+  var ui = $('#ui-left');
+  var hsize=0.60, vsize = 0.40, outOffset=0.2;
+  ui.css('width', hwidth*hsize);
+  ui.css('left', hwidth*(1-hsize+outOffset)/2) ;
+  ui.css('height', height*vsize);
+  ui.css('margin-top', height*(1-vsize)/2);
+
+  ui = $('#ui-right');
+  hsize=0.60; vsize = 0.40; outOffset=0.1;
+  ui.css('width', hwidth*hsize);
+  ui.css('right', hwidth*(1-hsize+outOffset)/2) ;
+  ui.css('height', height*vsize);
+  ui.css('margin-top', height*(1-vsize)/2);
+
+}
+
+
 function resize( event ) {
   WIDTH = window.innerWidth;
   HEIGHT = window.innerHeight;
+  setUiSize();
 
   OculusRift.hResolution = WIDTH,
   OculusRift.vResolution = HEIGHT,
@@ -519,6 +648,18 @@ $(document).ready(function() {
 
 
   WIDTH = window.innerWidth; HEIGHT = window.innerHeight;
+  $('.ui').tabs({
+    activate: function( event, ui ) {
+      var caller = event.target.id;
+      if (caller == 'ui-left') {
+        $("#ui-right").tabs("option","active", $("#ui-left").tabs("option","active"));
+      }
+      if (caller == 'ui-right') {
+        $("#ui-left").tabs("option","active", $("#ui-right").tabs("option","active"));
+      }
+    }
+  });
+  setUiSize();
 
   initWebGL();
   initPano();
