@@ -17,6 +17,9 @@ var GAMEPAD_SPEED = 0.04;
 var DEADZONE = 0.2;
 var SHOW_SETTINGS = true;
 var NAV_DELTA = 45;
+var FAR = 1000;
+var USE_DEPTH = true;
+var WORLD_FACTOR = 1.0;
 var OculusRift = {
   // Parameters from the Oculus Rift DK1
   hResolution: 1280,
@@ -47,6 +50,7 @@ var BaseRotationEuler = new THREE.Vector3();
 var gamepad;
 
 // Utility function
+// ----------------------------------------------
 function angleRangeDeg(angle) {
   while (angle >= 360) angle -=360;
   while (angle < 0) angle +=360;
@@ -73,30 +77,31 @@ function updateCameraRotation() {
   currHeading = angleRangeDeg(THREE.Math.radToDeg(-headingVector.y));
   //console.log('HEAD', currHeading);
 }
+// ----------------------------------------------
 
 function initWebGL() {
   // create scene
   scene = new THREE.Scene();
 
   // Create camera
-  camera = new THREE.PerspectiveCamera( 60, WIDTH/HEIGHT, 1, 1100 );
+  camera = new THREE.PerspectiveCamera( 60, WIDTH/HEIGHT, 0.1, FAR );
   camera.target = new THREE.Vector3( 1, 0, 0 );
   camera.useQuaternion = true;
   scene.add( camera );
 
   // Add projection sphere
-  var faces = 50;
-  projSphere = new THREE.Mesh( new THREE.SphereGeometry( 500, 60, 40 ), new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('placeholder.png'), side: THREE.DoubleSide}) );
+  projSphere = new THREE.Mesh( new THREE.SphereGeometry( 500, 512, 256 ), new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('placeholder.png'), side: THREE.DoubleSide}) );
+  projSphere.geometry.dynamic = true;
   projSphere.useQuaternion = true;
   scene.add( projSphere );
 
   // Add Progress Bar
-  progBarContainer = new THREE.Mesh( new THREE.CubeGeometry(120,20,10), new THREE.MeshBasicMaterial({color: 0xaaaaaa}));
-  progBarContainer.translateZ(-300);
+  progBarContainer = new THREE.Mesh( new THREE.CubeGeometry(1.2,0.2,0.1), new THREE.MeshBasicMaterial({color: 0xaaaaaa}));
+  progBarContainer.translateZ(-3);
   camera.add( progBarContainer );
 
-  progBar = new THREE.Mesh( new THREE.CubeGeometry(100,10,10), new THREE.MeshBasicMaterial({color: 0x0000ff}));
-  progBar.translateZ(10);
+  progBar = new THREE.Mesh( new THREE.CubeGeometry(1.0,0.1,0.1), new THREE.MeshBasicMaterial({color: 0x0000ff}));
+  progBar.translateZ(0.2);
   progBarContainer.add(progBar);
 
   // Create render
@@ -115,7 +120,7 @@ function initWebGL() {
   OculusRift.hResolution = WIDTH, OculusRift.vResolution = HEIGHT,
 
   // Add stereo effect
-  effect = new THREE.OculusRiftEffect( renderer, {HMD:OculusRift} );
+  effect = new THREE.OculusRiftEffect( renderer, {HMD:OculusRift, worldFactor:WORLD_FACTOR} );
   effect.setSize(WIDTH, HEIGHT );
 
   var viewer = $('#viewer');
@@ -124,6 +129,7 @@ function initWebGL() {
   var lastSpaceKeyTime = new Date();
   var lastCtrlKeyTime = new Date();
   $(document).keydown(function(e) {
+    //console.log(e.keyCode);
     switch(e.keyCode) {
       case 32:
         var spaceKeyTime = new Date();
@@ -151,6 +157,10 @@ function initWebGL() {
           moveToNextPlace();
         }
         lastCtrlKeyTime = ctrlKeyTime;
+        break;
+      case 18: //alt
+        USE_DEPTH = !USE_DEPTH;
+        setSphereGeometry()
         break;
     }
   });
@@ -228,6 +238,7 @@ function initWebGL() {
 
 function initPano() {
   panoLoader = new GSVPANO.PanoLoader();
+  panoDepthLoader = new GSVPANO.PanoDepthLoader();
   panoLoader.setZoom(QUALITY);
 
   panoLoader.onProgress = function( progress ) {
@@ -261,7 +272,34 @@ function initPano() {
     marker.setMap( null );
     marker = new google.maps.Marker({ position: this.location.latLng, map: gmap });
     marker.setMap( gmap );
+
+    panoDepthLoader.load(this.location.pano);
   };
+
+  panoDepthLoader.onDepthLoad = function() {
+    setSphereGeometry();
+  }
+}
+
+function setSphereGeometry() {
+  var geom = projSphere.geometry;
+  var depthMap = panoDepthLoader.depthMap.depthMap;
+  var y, x, u, v, radius, i=0;
+  for ( y = 0; y <= geom.heightSegments; y ++ ) {
+    for ( x = 0; x <= geom.widthSegments; x ++ ) {
+      u = x / geom.widthSegments;
+      v = y / geom.heightSegments;
+
+      radius = USE_DEPTH ? Math.min(depthMap[y*512 + x], FAR) : 500;
+
+      var vertex = geom.vertices[i];
+      vertex.x = - radius * Math.cos( geom.phiStart + u * geom.phiLength ) * Math.sin( geom.thetaStart + v * geom.thetaLength );
+      vertex.y = radius * Math.cos( geom.thetaStart + v * geom.thetaLength );
+      vertex.z = radius * Math.sin( geom.phiStart + u * geom.phiLength ) * Math.sin( geom.thetaStart + v * geom.thetaLength );
+      i++;
+    }
+  }
+  geom.verticesNeedUpdate = true;
 }
 
 function initWebSocket() {
@@ -426,6 +464,8 @@ $(document).ready(function() {
   if (params.sock !== undefined) {WEBSOCKET_ADDR = 'ws://'+params.sock; USE_TRACKER = true;}
   if (params.q !== undefined) QUALITY = params.q;
   if (params.s !== undefined) SHOW_SETTINGS = params.s !== "false";
+  if (params.depth !== undefined) USE_DEPTH = params.depth !== "false";
+  if (params.wf !== undefined) WORLD_FACTOR = parseFloat(params.wf);
 
 
   WIDTH = window.innerWidth; HEIGHT = window.innerHeight;
