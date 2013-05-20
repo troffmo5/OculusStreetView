@@ -497,6 +497,12 @@ function initGoogleMap() {
   });
   gmapRight.blockEvents = false;
 
+  svCoverageLeft = new google.maps.StreetViewCoverageLayer();
+  svCoverageLeft.setMap(gmapLeft);
+
+  svCoverageRight = new google.maps.StreetViewCoverageLayer();
+  svCoverageRight.setMap(gmapRight);
+
   geocoder = new google.maps.Geocoder();
 
   // TODO: better sync
