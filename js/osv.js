@@ -29,7 +29,8 @@ var OculusRift = {
   interpupillaryDistance: 0.064,
   lensSeparationDistance: 0.064,
   eyeToScreenDistance: 0.041,
-  distortionK : [1.0, 0.22, 0.24, 0.0]
+  distortionK : [1.0, 0.22, 0.24, 0.0],
+  chromaAbParameter: [ 0.996, -0.004, 1.014, 0.0]
 };
 
 // Globals
@@ -160,6 +161,8 @@ function initWebGL() {
         break;
       case 18: //alt
         USE_DEPTH = !USE_DEPTH;
+        $('#depth-left').prop('checked', USE_DEPTH);
+        $('#depth-right').prop('checked', USE_DEPTH);
         setSphereGeometry();
         break;
     }
@@ -260,6 +263,18 @@ function initWebGL() {
     }
     $('#wsock-left').prop('value', $('#wsock-right').val());
   });
+
+  $('#depth-left').change(function(event) {
+    USE_DEPTH = $('#depth-left').is(':checked');
+    $('#depth-right').prop('checked', USE_DEPTH);
+    setSphereGeometry();
+  });
+
+  $('#depth-right').change(function(event) {
+    USE_DEPTH = $('#depth-right').is(':checked');
+    $('#depth-left').prop('checked', USE_DEPTH);
+    setSphereGeometry();
+  });  
 
   window.addEventListener( 'resize', resize, false );
 

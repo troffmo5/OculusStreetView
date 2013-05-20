@@ -4,7 +4,7 @@ body {
   background: #000000;
   color: #000;
   font-family: sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 15px;
   height: 100%;
   overflow: hidden;
@@ -40,3 +40,12 @@ body {
   left: 5px;
   right: 5px;
 }
+
+.credits {
+  overflow: auto;
+}
+
+.help {
+  overflow: auto;
+}
+
