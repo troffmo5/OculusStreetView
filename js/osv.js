@@ -290,10 +290,13 @@ function initPano() {
       progBar.visible = true;
       progBar.scale = new THREE.Vector3(progress/100.0,1,1);
     }
+    $(".mapprogress").progressbar("option", "value", progress);
+
   };
   panoLoader.onPanoramaData = function( result ) {
     progBarContainer.visible = true;
     progBar.visible = false;
+    $('.mapprogress').show();
   };
 
   panoLoader.onNoPanoramaData = function( status ) {
@@ -320,6 +323,8 @@ function initPano() {
     markerRight.setMap( null );
     markerRight = new google.maps.Marker({ position: this.location.latLng, map: gmapRight });
     markerRight.setMap( gmapRight );
+
+    $('.mapprogress').hide();
 
 /*    if (window.history) {
       var newUrl = '/?lat='+this.location.latLng.lat()+'&lng='+this.location.latLng.lng();
@@ -426,6 +431,11 @@ function getGamepadEvents() {
 }
 
 function initGoogleMap() {
+
+  $('.mapprogress').progressbar({
+    value: false
+  });
+
   currentLocation = new google.maps.LatLng( DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng );
 
   var eventLock = false;
