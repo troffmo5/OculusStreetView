@@ -326,14 +326,14 @@ function initPano() {
 
     $('.mapprogress').hide();
 
-/*    if (window.history) {
+    if (window.history) {
       var newUrl = '/?lat='+this.location.latLng.lat()+'&lng='+this.location.latLng.lng();
       newUrl += USE_TRACKER ? '&sock='+escape(WEBSOCKET_ADDR.slice(5)) : '';
       newUrl += '&q='+QUALITY;
       newUrl += '&s='+$('#settings').is(':visible');
       newUrl += '&heading='+currHeading;
       window.history.pushState('','',newUrl);
-    }*/
+    }
 
     panoDepthLoader.load(this.location.pano);
   };
