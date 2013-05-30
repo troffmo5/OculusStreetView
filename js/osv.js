@@ -200,8 +200,9 @@ function initWebGL() {
   lastClientX = 0; lastClientY = 0;
   viewer.mousemove(function(event) {
     if (MOVING_MOUSE) {
+      var enableX = (USE_TRACKER || VRState !== null) ? 0 : 1;
       BaseRotationEuler.set(
-        angleRangeRad(BaseRotationEuler.x + (event.clientY - lastClientY) * MOUSE_SPEED),
+        angleRangeRad(BaseRotationEuler.x + (event.clientY - lastClientY) * MOUSE_SPEED * enableX),
         angleRangeRad(BaseRotationEuler.y + (event.clientX - lastClientX) * MOUSE_SPEED),
         0.0
       );
@@ -225,6 +226,7 @@ function initWebGL() {
     if (USE_TRACKER) {
       WEBSOCKET_ADDR = $('#wsock-left').val();
       initWebSocket();
+      BaseRotationEuler.x = 0.0;
       VRState = null;
     }
     else {
@@ -239,6 +241,7 @@ function initWebGL() {
     if (USE_TRACKER) {
       WEBSOCKET_ADDR = $('#wsock-right').val();
       initWebSocket();
+      BaseRotationEuler.x = 0.0;
       VRState = null;
     }
     else {
@@ -276,7 +279,7 @@ function initWebGL() {
     USE_DEPTH = $('#depth-right').is(':checked');
     $('#depth-left').prop('checked', USE_DEPTH);
     setSphereGeometry();
-  });  
+  });
 
   window.addEventListener( 'resize', resize, false );
 
@@ -404,7 +407,7 @@ function getGamepadEvents() {
         var pad = gamepads[i];
         if (pad) {
           //console.log(pad.buttons, pad.axes);
-          if (pad.buttons[0] === 1 && lastButton0 ===0) {
+          if (pad.buttons[0] === 1 && lastButton0 === 0) {
             moveToNextPlace();
           }
           lastButton0 = pad.buttons[0];
@@ -584,6 +587,7 @@ function initVR() {
       VRState = null;
       return;
     }
+    BaseRotationEuler.x = 0.0;
   });
 }
 
