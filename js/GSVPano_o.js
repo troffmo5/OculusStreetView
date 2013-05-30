@@ -27,6 +27,7 @@ GSVPANO.PanoLoader = function (parameters) {
 		rotation = 0,
 		copyright = '',
 		links = [],
+		loading = false,
 		onSizeChange = null,
 		onPanoramaLoad = null;
 
@@ -63,6 +64,7 @@ GSVPANO.PanoLoader = function (parameters) {
 
 		if (_count === _total) {
 			this.canvas = _canvas;
+			this.loading = false;
 			if (this.onPanoramaLoad) {
 				this.onPanoramaLoad();
 			}
@@ -116,12 +118,15 @@ GSVPANO.PanoLoader = function (parameters) {
 			self.composePanorama(cache);
 		} else {
 			if( self.onNoPanoramaData ) self.onNoPanoramaData( status );
+			self.loading = false;
 			self.throwError('Could not retrieve panorama for the following reason: ' + status);
 		}
 	},
 
 	this.load = function (location, cache) {
 		var self = this;
+		if (self.loading) return;
+		self.loading = true;
 		cache = cache || true;
 		if ((typeof location) === 'string') {
 			_panoClient.getPanoramaById(location, function(result, status){self.loadCB(result, status, location, cache)})
