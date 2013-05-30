@@ -44,6 +44,8 @@ var navList = [];
 
 var headingVector = new THREE.Vector3();
 var moveVector = new THREE.Vector3();
+var keyboardMoveVector = new THREE.Vector3();
+var gamepadMoveVector = new THREE.Vector3();
 var HMDRotation = new THREE.Quaternion();
 var BaseRotation = new THREE.Quaternion();
 var BaseRotationEuler = new THREE.Vector3();
@@ -141,16 +143,16 @@ function initWebGL() {
         lastSpaceKeyTime = spaceKeyTime;
         break;
       case 37:
-        moveVector.y = KEYBOARD_SPEED;
+        keyboardMoveVector.y = KEYBOARD_SPEED;
         break;
       case 38:
-        moveVector.x = KEYBOARD_SPEED;
+        keyboardMoveVector.x = KEYBOARD_SPEED;
         break;
       case 39:
-        moveVector.y = -KEYBOARD_SPEED;
+        keyboardMoveVector.y = -KEYBOARD_SPEED;
         break;
       case 40:
-        moveVector.x = -KEYBOARD_SPEED;
+        keyboardMoveVector.x = -KEYBOARD_SPEED;
         break;
       case 17:
         var ctrlKeyTime = new Date();
@@ -172,11 +174,11 @@ function initWebGL() {
     switch(e.keyCode) {
       case 37:
       case 39:
-        moveVector.y = 0.0;
+        keyboardMoveVector.y = 0.0;
         break;
       case 38:
       case 40:
-        moveVector.x = 0.0;
+        keyboardMoveVector.x = 0.0;
         break;
     }
   });
@@ -424,7 +426,7 @@ function getGamepadEvents() {
           else
             padY = padY = 0;
 
-          moveVector.set(-padX*GAMEPAD_SPEED, -padY*GAMEPAD_SPEED, 0.0);
+          gamepadMoveVector.set(-padX*GAMEPAD_SPEED, -padY*GAMEPAD_SPEED, 0.0);
         }
     }
   }
@@ -636,6 +638,9 @@ function loop() {
       HMDRotation.set(VRState.hmd.rotation[0], VRState.hmd.rotation[1], VRState.hmd.rotation[2], VRState.hmd.rotation[3]);
     }
   }
+
+  // Compute move vector
+  moveVector.addVectors(keyboardMoveVector, gamepadMoveVector);
 
   // Disable X movement HMD tracking is enabled
   if (USE_TRACKER || VRState !== null) {
