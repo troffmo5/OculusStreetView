@@ -10,7 +10,6 @@ var QUALITY = 3;
 var DEFAULT_LOCATION = { lat:44.301945982379095,  lng:9.211585521697998 };
 var WEBSOCKET_ADDR = "ws://127.0.0.1:1981";
 var USE_TRACKER = false;
-var MOVING_MOUSE = false;
 var MOUSE_SPEED = 0.005;
 var KEYBOARD_SPEED = 0.02;
 var GAMEPAD_SPEED = 0.04;
@@ -36,10 +35,8 @@ var OculusRift = {
 // Globals
 // ----------------------------------------------
 var WIDTH, HEIGHT;
-var GAMEPAD;
 var currHeading = 0;
 var centerHeading = 0;
-var mouseMoved = false;
 var navList = [];
 
 var headingVector = new THREE.Vector3();
@@ -50,20 +47,19 @@ var HMDRotation = new THREE.Quaternion();
 var BaseRotation = new THREE.Quaternion();
 var BaseRotationEuler = new THREE.Vector3();
 
-var gamepad;
 var VRState = null;
 
 // Utility function
 // ----------------------------------------------
 function angleRangeDeg(angle) {
-  while (angle >= 360) angle -=360;
-  while (angle < 0) angle +=360;
+  angle %= 360;
+  if (angle < 0) angle += 360;
   return angle;
 }
 
 function angleRangeRad(angle) {
-  while (angle > Math.PI) angle -= 2*Math.PI;
-  while (angle <= -Math.PI) angle += 2*Math.PI;
+  angle %= 2*Math.PI;
+  if (angle < 0) angle += 2*Math.PI;
   return angle;
 }
 
@@ -75,12 +71,7 @@ function deltaAngleRas(a,b) {
   // todo
 }
 
-function updateCameraRotation() {
-  camera.quaternion.multiplyQuaternions(BaseRotation, HMDRotation);
-  headingVector.setEulerFromQuaternion(camera.quaternion, 'YZX');
-  currHeading = angleRangeDeg(THREE.Math.radToDeg(-headingVector.y));
-  //console.log('HEAD', currHeading);
-}
+
 // ----------------------------------------------
 
 function initWebGL() {
@@ -121,21 +112,28 @@ function initWebGL() {
   renderer.setSize( WIDTH, HEIGHT );
 
   // Add stereo effect
+
+  // Set the window resolution of the rift in case of not native
   OculusRift.hResolution = WIDTH, OculusRift.vResolution = HEIGHT,
 
-  // Add stereo effect
   effect = new THREE.OculusRiftEffect( renderer, {HMD:OculusRift, worldFactor:WORLD_FACTOR} );
   effect.setSize(WIDTH, HEIGHT );
 
   var viewer = $('#viewer');
   viewer.append(renderer.domElement);
+}
 
-  var lastSpaceKeyTime = new Date();
-  var lastCtrlKeyTime = new Date();
+function initControls() {
+
+  // Keyboard
+  // ---------------------------------------
+  var lastSpaceKeyTime = new Date(),
+      lastCtrlKeyTime = lastSpaceKeyTime;
+
   $(document).keydown(function(e) {
     //console.log(e.keyCode);
     switch(e.keyCode) {
-      case 32:
+      case 32: // Space
         var spaceKeyTime = new Date();
         if (spaceKeyTime-lastSpaceKeyTime < 300) {
           $('.ui').toggle(200);
@@ -154,14 +152,14 @@ function initWebGL() {
       case 40:
         keyboardMoveVector.x = -KEYBOARD_SPEED;
         break;
-      case 17:
+      case 17: // Ctrl
         var ctrlKeyTime = new Date();
         if (ctrlKeyTime-lastCtrlKeyTime < 300) {
           moveToNextPlace();
         }
         lastCtrlKeyTime = ctrlKeyTime;
         break;
-      case 18: //alt
+      case 18: // Alt
         USE_DEPTH = !USE_DEPTH;
         $('#depth-left').prop('checked', USE_DEPTH);
         $('#depth-right').prop('checked', USE_DEPTH);
@@ -183,36 +181,80 @@ function initWebGL() {
     }
   });
 
+  // Mouse
+  // ---------------------------------------
+  var viewer = $('#viewer'),
+      mouseButtonDown = false,
+      lastClientX = 0,
+      lastClientY = 0;
+
   viewer.dblclick(function() {
     moveToNextPlace();
   });
 
   viewer.mousedown(function(event) {
-    MOVING_MOUSE = true;
+    mouseButtonDown = true;
     lastClientX = event.clientX;
     lastClientY = event.clientY;
   });
 
   viewer.mouseup(function() {
-    MOVING_MOUSE = false;
+    mouseButtonDown = false;
   });
 
-  lastClientX = 0; lastClientY = 0;
   viewer.mousemove(function(event) {
-    if (MOVING_MOUSE) {
+    if (mouseButtonDown) {
       var enableX = (USE_TRACKER || VRState !== null) ? 0 : 1;
       BaseRotationEuler.set(
         angleRangeRad(BaseRotationEuler.x + (event.clientY - lastClientY) * MOUSE_SPEED * enableX),
         angleRangeRad(BaseRotationEuler.y + (event.clientX - lastClientX) * MOUSE_SPEED),
         0.0
       );
-      lastClientX = event.clientX;lastClientY =event.clientY;
+      lastClientX = event.clientX;
+      lastClientY = event.clientY;
       BaseRotation.setFromEuler(BaseRotationEuler, 'YZX');
-
-      updateCameraRotation();
     }
   });
 
+  // Gamepad
+  // ---------------------------------------
+  gamepad = new Gamepad();
+  gamepad.bind(Gamepad.Event.CONNECTED, function(device) {
+    console.log("Gamepad CONNECTED")
+  });
+
+  gamepad.bind(Gamepad.Event.BUTTON_DOWN, function(e) {
+    if (e.control == "FACE_1") {
+      moveToNextPlace();
+    }
+    else if (e.control == "FACE_2") {
+      $('.ui').toggle(200);
+    }
+  });
+
+  gamepad.bind(Gamepad.Event.AXIS_CHANGED, function(e) {
+
+    // ignore deadzone
+    var value = e.value;
+    if (value < -DEADZONE) value = value + DEADZONE;
+    else if(value > DEADZONE) value = value - DEADZONE;
+    else value = 0;
+
+    if (e.axis == "LEFT_STICK_X") {
+      gamepadMoveVector.y = -value*GAMEPAD_SPEED;
+    }
+    else if (e.axis == "LEFT_STICK_Y") {
+      gamepadMoveVector.x = -value*GAMEPAD_SPEED;
+    }
+  });
+
+  if (!gamepad.init()) {
+    //console.log("Gamepad not supported");
+  }
+}
+
+function initGui()
+{
   if (!SHOW_SETTINGS) {
     $('.ui').hide();
   }
@@ -387,7 +429,6 @@ function initWebSocket() {
   connection.onmessage = function (message) {
     var data = JSON.parse('['+message.data+']');
     HMDRotation.set(data[1],data[2],data[3],data[0]);
-    updateCameraRotation();
   };
 
   connection.onclose = function () {
@@ -396,54 +437,11 @@ function initWebSocket() {
   };
 }
 
-var lastButton0 = 0;
-var lastButton1 = 0;
-function getGamepadEvents() {
-  var gamepadSupportAvailable = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
-  if (gamepadSupportAvailable) {
-    var gamepads = navigator.webkitGetGamepads();
-    for (var i = 0; i < gamepads.length; ++i)
-    {
-        var pad = gamepads[i];
-        if (pad) {
-          //console.log(pad.buttons, pad.axes);
-          if (pad.buttons[0] === 1 && lastButton0 === 0) {
-            moveToNextPlace();
-          }
-          lastButton0 = pad.buttons[0];
-
-          var padX = pad.axes[1], padY = pad.axes[0];
-
-          // ignore deadzone
-          if (padX < -DEADZONE)
-            padX = padX + DEADZONE;
-          else if(padX > DEADZONE)
-            padX = padX - DEADZONE;
-          else
-            padX = 0;
-
-          if (padY < -DEADZONE)
-            padY = padY + DEADZONE;
-          else if(padY > DEADZONE)
-            padY = padY - DEADZONE;
-          else
-            padY = padY = 0;
-
-          gamepadMoveVector.set(-padX*GAMEPAD_SPEED, -padY*GAMEPAD_SPEED, 0.0);
-        }
-    }
-  }
-}
-
 function initGoogleMap() {
-
-  $('.mapprogress').progressbar({
-    value: false
-  });
+  $('.mapprogress').progressbar({ value: false });
 
   currentLocation = new google.maps.LatLng( DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng );
 
-  var eventLock = false;
   gmapLeft = new google.maps.Map($('#map-left')[0], {
     zoom: 14,
     center: currentLocation,
@@ -616,7 +614,6 @@ function setUiSize() {
 
 }
 
-
 function resize( event ) {
   WIDTH = window.innerWidth;
   HEIGHT = window.innerHeight;
@@ -632,9 +629,6 @@ function resize( event ) {
 
 function loop() {
   requestAnimationFrame( loop );
-
-  // Check gamepad movement
-  getGamepadEvents();
 
   // User vr plugin
   if (!USE_TRACKER && VRState !== null) {
@@ -654,7 +648,13 @@ function loop() {
   // Apply movement
   BaseRotationEuler.set( angleRangeRad(BaseRotationEuler.x + moveVector.x), angleRangeRad(BaseRotationEuler.y + moveVector.y), 0.0 );
   BaseRotation.setFromEuler(BaseRotationEuler, 'YZX');
-  updateCameraRotation();
+
+  // Update camera rotation
+  camera.quaternion.multiplyQuaternions(BaseRotation, HMDRotation);
+
+  // Compute heading
+  headingVector.setEulerFromQuaternion(camera.quaternion, 'YZX');
+  currHeading = angleRangeDeg(THREE.Math.radToDeg(-headingVector.y));
 
   // render
   render();
@@ -702,6 +702,8 @@ $(document).ready(function() {
   setUiSize();
 
   initWebGL();
+  initControls();
+  initGui();
   initPano();
   if (USE_TRACKER) initWebSocket();
   else initVR();
