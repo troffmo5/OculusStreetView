@@ -299,7 +299,6 @@ function initGui()
       if (connection) connection.close();
       initWebSocket();
     }
-    $('#wsock-right').prop('value', $('#wsock-left').val());
   });
 
   $('#wsock-right').change(function(event) {
@@ -308,7 +307,14 @@ function initGui()
       if (connection) connection.close();
       initWebSocket();
     }
-    $('#wsock-left').prop('value', $('#wsock-right').val());
+  });
+
+  $('#wsock-left').keyup(function() {
+      $('#wsock-right').prop('value', $('#wsock-left').val() );
+  });
+
+  $('#wsock-right').keyup(function() {
+      $('#wsock-left').prop('value', $('#wsock-right').val() );
   });
 
   $('#depth-left').change(function(event) {
@@ -518,16 +524,15 @@ function initGoogleMap() {
 
   geocoder = new google.maps.Geocoder();
 
-  // TODO: better sync
   $('#mapsearch-left').change(function() {
       geocoder.geocode( { 'address': $('#mapsearch-left').val()}, function(results, status) {
       if (status == google.maps.GeocoderStatus.OK) {
         gmapLeft.setCenter(results[0].geometry.location);
         panoLoader.load( results[0].geometry.location );
       }
-      $('#mapsearch-right').prop('value', $('#mapsearch-left').val() );
     });
   });
+
   $('#mapsearch-right').change(function() {
       geocoder.geocode( { 'address': $('#mapsearch-right').val()}, function(results, status) {
       if (status == google.maps.GeocoderStatus.OK) {
@@ -538,7 +543,13 @@ function initGoogleMap() {
     });
   });
 
+  $('#mapsearch-left').keyup(function() {
+      $('#mapsearch-right').prop('value', $('#mapsearch-left').val() );
+  });
 
+  $('#mapsearch-right').keyup(function() {
+      $('#mapsearch-left').prop('value', $('#mapsearch-right').val() );
+  });
 
   markerLeft = new google.maps.Marker({ position: currentLocation, map: gmapLeft });
   markerLeft.setMap( gmapLeft );
