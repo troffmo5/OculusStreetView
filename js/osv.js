@@ -224,11 +224,18 @@ function initControls() {
   });
 
   gamepad.bind(Gamepad.Event.BUTTON_DOWN, function(e) {
-    if (e.control == "FACE_1") {
-      moveToNextPlace();
-    }
-    else if (e.control == "FACE_2") {
+    if (e.control == "FACE_2") {
       $('.ui').toggle(200);
+    }
+  });
+
+  // Look for tick event so that we can hold down the FACE_1 button and
+  // continually move in the current direction
+  gamepad.bind(Gamepad.Event.TICK, function(gamepads) {
+    // Multiple calls before next place has finished loading do not matter
+    // GSVPano library will ignore these
+    if (gamepads[0].state["FACE_1"] === 1) {
+      moveToNextPlace();
     }
   });
 
