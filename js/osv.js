@@ -114,7 +114,8 @@ function initWebGL() {
   // Add stereo effect
 
   // Set the window resolution of the rift in case of not native
-  OculusRift.hResolution = WIDTH, OculusRift.vResolution = HEIGHT,
+  OculusRift.hResolution = WIDTH;
+  OculusRift.vResolution = HEIGHT;
 
   effect = new THREE.OculusRiftEffect( renderer, {HMD:OculusRift, worldFactor:WORLD_FACTOR} );
   effect.setSize(WIDTH, HEIGHT );
@@ -220,7 +221,7 @@ function initControls() {
   // ---------------------------------------
   gamepad = new Gamepad();
   gamepad.bind(Gamepad.Event.CONNECTED, function(device) {
-    console.log("Gamepad CONNECTED")
+    console.log("Gamepad CONNECTED");
   });
 
   gamepad.bind(Gamepad.Event.BUTTON_DOWN, function(e) {
@@ -234,7 +235,7 @@ function initControls() {
   gamepad.bind(Gamepad.Event.TICK, function(gamepads) {
     // Multiple calls before next place has finished loading do not matter
     // GSVPano library will ignore these
-    if (gamepads[0].state["FACE_1"] === 1) {
+    if (gamepads[0].state.FACE_1 === 1) {
       moveToNextPlace();
     }
   });
@@ -637,8 +638,8 @@ function resize( event ) {
   HEIGHT = window.innerHeight;
   setUiSize();
 
-  OculusRift.hResolution = WIDTH,
-  OculusRift.vResolution = HEIGHT,
+  OculusRift.hResolution = WIDTH;
+  OculusRift.vResolution = HEIGHT;
   effect.setHMD(OculusRift);
 
   renderer.setSize( WIDTH, HEIGHT );
