@@ -65,7 +65,7 @@ function initWebGL() {
   scene.add( camera );
 
   // Add projection sphere
-  projSphere = new THREE.Mesh( new THREE.SphereGeometry( 500, 512, 256 ), new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('placeholder.png'), side: THREE.DoubleSide}) );
+  projSphere = new THREE.Mesh( new THREE.SphereGeometry( 500, 512, 256, 0, Math.PI * 2, 0, Math.PI), new THREE.MeshBasicMaterial({ map: THREE.ImageUtils.loadTexture('placeholder.png'), side: THREE.DoubleSide}) );
   projSphere.geometry.dynamic = true;
   scene.add( projSphere );
 
@@ -259,19 +259,20 @@ function initPano() {
 
 function setSphereGeometry() {
   var geom = projSphere.geometry;
+  var geomParam = geom.parameters;
   var depthMap = panoDepthLoader.depthMap.depthMap;
   var y, x, u, v, radius, i=0;
-  for ( y = 0; y <= geom.heightSegments; y ++ ) {
-    for ( x = 0; x <= geom.widthSegments; x ++ ) {
-      u = x / geom.widthSegments;
-      v = y / geom.heightSegments;
+  for ( y = 0; y <= geomParam.heightSegments; y ++ ) {
+    for ( x = 0; x <= geomParam.widthSegments; x ++ ) {
+      u = x / geomParam.widthSegments;
+      v = y / geomParam.heightSegments;
 
       radius = USE_DEPTH ? Math.min(depthMap[y*512 + x], FAR) : 500;
 
       var vertex = geom.vertices[i];
-      vertex.x = - radius * Math.cos( geom.phiStart + u * geom.phiLength ) * Math.sin( geom.thetaStart + v * geom.thetaLength );
-      vertex.y = radius * Math.cos( geom.thetaStart + v * geom.thetaLength );
-      vertex.z = radius * Math.sin( geom.phiStart + u * geom.phiLength ) * Math.sin( geom.thetaStart + v * geom.thetaLength );
+      vertex.x = - radius * Math.cos( geomParam.phiStart + u * geomParam.phiLength ) * Math.sin( geomParam.thetaStart + v * geomParam.thetaLength );
+      vertex.y = radius * Math.cos( geomParam.thetaStart + v * geomParam.thetaLength );
+      vertex.z = radius * Math.sin( geomParam.phiStart + u * geomParam.phiLength ) * Math.sin( geomParam.thetaStart + v * geomParam.thetaLength );
       i++;
     }
   }
