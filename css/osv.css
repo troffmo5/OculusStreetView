@@ -10,14 +10,9 @@ body {
   overflow: hidden;
 }
 
-#viewer {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .ui {
   position: absolute;
+  top: 0;
 }
 
 .mapcontainer {
@@ -45,5 +40,5 @@ body {
   position: absolute;
   top: 50%;
   left: 20px;
-  right: 20px; 
+  right: 20px;
 }
