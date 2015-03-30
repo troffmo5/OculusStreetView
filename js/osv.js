@@ -96,7 +96,7 @@ function initWebGL() {
   vrmgr = new WebVRManager(effect);
 
   var viewer = $('#viewer');
-  viewer.append(renderer.domElement);
+  viewer.append(renderer.domElement); 
 }
 
 function initControls() {
@@ -322,7 +322,22 @@ function initGoogleMap() {
 
   marker = new google.maps.Marker({ position: currentLocation, map: gmap });
   marker.setMap( gmap );
+}
 
+function checkWebVR() {
+  if(!vrmgr.isWebVRCompatible()) {
+    $("#webvrinfo").dialog({
+      modal: true,
+      buttons: {
+        Ok: function() {
+          $(this).dialog("close");
+        }
+      }
+    });
+  }
+  else {
+    $("#webvrinfo").hide();
+  }
 }
 
 
@@ -437,6 +452,8 @@ $(document).ready(function() {
 
   // Load default location
   panoLoader.load( new google.maps.LatLng( DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lng ) );
+
+  checkWebVR();
 
   loop();
 });
