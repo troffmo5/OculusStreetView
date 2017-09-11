@@ -60,8 +60,6 @@ function initWebGL() {
   camera = new THREE.PerspectiveCamera( 60, WIDTH/HEIGHT, 0.1, FAR );
   camera.target = new THREE.Vector3( 1, 0, 0 );
 
-  controls  = new THREE.VRControls(camera);
-
   scene.add( camera );
 
   // Add projection sphere
@@ -87,13 +85,14 @@ function initWebGL() {
     return false;
   }
 
+  WEBVR.getVRDisplay(function (display) {
+    renderer.vr.setDevice(display);
+    document.body.appendChild(WEBVR.getButton(display, renderer.domElement));
+  });
+
+  renderer.vr.enabled = true;
   renderer.autoClearColor = false;
   renderer.setSize( WIDTH, HEIGHT );
-
-  effect = new THREE.VREffect( renderer );
-  effect.setSize(WIDTH, HEIGHT );
-
-  vrmgr = new WebVRManager(effect);
 
   var viewer = $('#viewer');
   viewer.append(renderer.domElement); 
@@ -244,7 +243,7 @@ function initPano() {
       var newUrl = '?lat='+this.location.latLng.lat()+'&lng='+this.location.latLng.lng();
       newUrl += USE_TRACKER ? '&sock='+escape(WEBSOCKET_ADDR.slice(5)) : '';
       newUrl += '&q='+QUALITY;
-      newUrl += '&s='+$('#settings').is(':visible');
+      newUrl += '&s=true';
       newUrl += '&heading='+currHeading;
       window.history.pushState('','',newUrl);
     }
@@ -325,19 +324,9 @@ function initGoogleMap() {
 }
 
 function checkWebVR() {
-  if(!vrmgr.isWebVRCompatible()) {
-    $("#webvrinfo").dialog({
-      modal: true,
-      buttons: {
-        Ok: function() {
-          $(this).dialog("close");
-        }
-      }
-    });
-  }
-  else {
-    $("#webvrinfo").hide();
-  }
+  WEBVR.checkAvailability().catch( function( message ) {
+    document.body.appendChild( WEBVR.getMessageContainer( message ) );
+  });
 }
 
 
@@ -359,12 +348,7 @@ function moveToNextPlace() {
 }
 
 function render() {
-  if (vrmgr.isVRMode()) {
-    effect.render( scene, camera );
-  }
-  else {
-    renderer.render(scene, camera);
-  }
+  renderer.render(scene, camera);
 }
 
 function setUiSize() {
@@ -390,8 +374,6 @@ function resize( event ) {
 }
 
 function loop() {
-  requestAnimationFrame( loop );
-
   // Apply movement
   // BaseRotationEuler.set( angleRangeRad(BaseRotationEuler.x + gamepadMoveVector.x), angleRangeRad(BaseRotationEuler.y + gamepadMoveVector.y), 0.0 );
   // BaseRotation.setFromEuler(BaseRotationEuler, 'YZX');
@@ -399,8 +381,6 @@ function loop() {
   // Compute heading
   headingVector.setFromQuaternion(camera.quaternion, 'YZX');
   currHeading = angleRangeDeg(THREE.Math.radToDeg(-headingVector.y));
-
-  controls.update();
 
   // render
   render();
@@ -455,5 +435,5 @@ $(document).ready(function() {
 
   checkWebVR();
 
-  loop();
+  renderer.animate(loop);
 });
