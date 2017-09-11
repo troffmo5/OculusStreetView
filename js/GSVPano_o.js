@@ -19,6 +19,9 @@ GSVPANO.PanoLoader = function (parameters) {
 		_location,
 		_zoom,
 		_panoId,
+		_panoWidth,
+		_panoHeight,
+		_isContributedPano,
 		_panoClient = new google.maps.StreetViewService(),
 		_count = 0,
 		_total = 0,
@@ -80,20 +83,38 @@ GSVPANO.PanoLoader = function (parameters) {
 			self = this,
 			url,
 			x, y;
-		if (_zoom == 3) w-=1;
-		if (_zoom == 4) { w -= 3; h-=1;}
+
+		if (_isContributedPano) {
+			w = Math.ceil(_panoWidth / 512);
+			h = Math.ceil(_panoHeight / 512);
+			_canvas.width = _panoWidth;
+			_canvas.height = _panoHeight;
+		}
+		else {
+			if (_zoom == 3) w-=1;
+			if (_zoom == 4) { w -= 3; h-=1;}
+			self.adaptTextureToZoom();
+		}
 
 		_count = 0;
 		_total = w * h;
 
 		for( y = 0; y < h; y++) {
 			for( x = 0; x < w; x++) {
-				url = 'http://maps.google.com/cbk?output=tile&panoid=' + _panoId + '&zoom=' + _zoom + '&x=' + x + '&y=' + y;
+				if (_isContributedPano) {
+					url = `https://lh3.ggpht.com/p/${_panoId}=x${x}-y${y}-z${+_zoom+1}`;
+				}
+				else {
+					url = 'http://maps.google.com/cbk?output=tile&panoid=' + _panoId + '&zoom=' + _zoom + '&x=' + x + '&y=' + y;
+				}
 				if (!cache) url += '&' + Date.now();
 				(function (x, y) {
 					var img = new Image();
 					img.addEventListener('load', function () {
 						self.composeFromTile(x, y, this);
+					});
+					img.addEventListener('error', function () {
+						self.loading = false;
 					});
 					img.crossOrigin = '';
 					img.src = url;
@@ -101,6 +122,18 @@ GSVPANO.PanoLoader = function (parameters) {
 			}
 		}
 	};
+
+	function getZoomSize(width, height, zoom) {
+		const sizes = [[width, height]];
+		let currWidth = width;
+		let currHeight = height;
+		while (currWidth > 512 || currHeight > 512) {
+			currWidth = currWidth / 2;
+			currHeight = currHeight / 2;
+			sizes.unshift([currWidth, currHeight]);
+		}
+		return sizes[Math.min(sizes.length - 1, +zoom + 1)];
+	}
 
 	this.loadCB = function (result, status, location, cache) {
 		var self = this;
@@ -113,7 +146,18 @@ GSVPANO.PanoLoader = function (parameters) {
 			self.copyright = result.copyright;
 			self.links = result.links;
 			self.heading = result.tiles.centerHeading;
-			_panoId = result.location.pano;
+			_isContributedPano = !!result.location.profileUrl;
+			if (_isContributedPano) {
+				_panoId = result.takeDownUrl.split('!')[2].substring(2);
+				const size = getZoomSize(result.tiles.worldSize.width, result.tiles.worldSize.height, _zoom);
+				_panoWidth = size[0];
+				_panoHeight = size[1];
+			}
+			else {
+				_panoWidth = null;
+				_panoHeight = null;
+				_panoId = result.location.pano;
+			}
 			self.location = result.location;
 			self.composePanorama(cache);
 		} else {
